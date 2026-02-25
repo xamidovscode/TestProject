@@ -23,6 +23,9 @@ class User(AbstractUser, TimeStamp, DeleteMixin):
     full_name = models.CharField(
         max_length=255, verbose_name='Full Name'
     )
+    phone = models.CharField(
+        max_length=255, verbose_name='Phone Number'
+    )
     role = models.CharField(
         choices=Roles.choices, default=Roles.OWNER,
     )
