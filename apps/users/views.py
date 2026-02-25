@@ -18,6 +18,7 @@ class LoginAPIView(APIView):
             {
                 "user_id": user.id,
                 "username": user.username,
+                'full_name': user.full_name,
                 "access": tokens["access"],
                 "refresh": tokens["refresh"],
             },
