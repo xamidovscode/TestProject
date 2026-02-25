@@ -12,12 +12,19 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 class User(AbstractUser, TimeStamp, DeleteMixin):
 
+    class Roles(models.TextChoices):
+        OWNER = 'user', 'Owner'
+        MANAGER = 'manager', 'Manager'
+
     first_name = None
     last_name = None
     email = None
 
     full_name = models.CharField(
         max_length=255, verbose_name='Full Name'
+    )
+    role = models.CharField(
+        choices=Roles.choices, default=Roles.OWNER,
     )
 
     USERNAME_FIELD = "username"
