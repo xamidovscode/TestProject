@@ -18,6 +18,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'apps.common',
     'apps.users',
+    "rest_framework",
+
 ]
 
 MIDDLEWARE = [
@@ -77,6 +79,11 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ),
+}
 
 LANGUAGE_CODE = 'en-us'
 
