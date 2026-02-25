@@ -15,9 +15,9 @@ class User(AbstractUser, TimeStamp, DeleteMixin):
         max_length=255, verbose_name='Full Name'
     )
 
-
     USERNAME_FIELD = "username"
     REQUIRED_FIELDS = []
+
 
     objects = UserManager()
 
