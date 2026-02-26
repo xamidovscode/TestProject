@@ -12,11 +12,11 @@ services:
     build: .
     container_name: django_app
     restart: always
-    command: gunicorn config.wsgi:application --bind 0.0.0.0:8000
+    command: gunicorn config.wsgi:application --bind 0.0.0.0:8003
     volumes:
       - .:/app
     ports:
-      - "8000:8000"
+      - "8003:8003"
     env_file:
       - .env
     depends_on:
