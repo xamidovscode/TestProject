@@ -28,7 +28,6 @@ class Status(TimeStamp, DeleteMixin):
     class StatusChoices(models.IntegerChoices):
         NEW = (0, 'New')
         SUCCESS = (1, 'Success')
-        DONE = (3, 'Done')
 
     name = models.CharField(
         max_length=255,
