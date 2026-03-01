@@ -1,6 +1,8 @@
 from django.contrib.auth import authenticate
 from rest_framework import serializers
+
 from utils.exceptions import BadRequest
+from . import models
 
 
 class LoginSerializer(serializers.Serializer):
@@ -30,3 +32,15 @@ class LoginSerializer(serializers.Serializer):
 
         attrs["user"] = user
         return attrs
+
+
+class RoleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Role
+        fields = "__all__"
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.User
+        fields = "__all__"

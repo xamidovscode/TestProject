@@ -1,12 +1,13 @@
-from rest_framework import generics
-from rest_framework.views import APIView
-from rest_framework.response import Response
+from rest_framework import generics, viewsets
 from rest_framework import status
-from .serializers import LoginSerializer
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from . import serializers, models
 
 
 class LoginAPIView(APIView):
-    serializer_class = LoginSerializer
+    serializer_class = serializers.LoginSerializer
     permission_classes = ()
 
     def post(self, request):
@@ -41,3 +42,12 @@ class ProfileAPIView(generics.GenericAPIView):
             "full_name": instance.full_name,
         })
 
+
+class RoleViewSet(viewsets.ModelViewSet):
+    queryset = models.Role.objects.all().order_by("-id")
+    serializer_class = serializers.RoleSerializer
+
+
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = models.User.objects.all().order_by("-id")
+    serializer_class = serializers.UserSerializer
