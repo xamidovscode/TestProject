@@ -4,21 +4,22 @@ __all__ = (
 
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.common.models import TimeStamp, DeleteMixin
 from apps.users.managers import UserManager
-from rest_framework_simplejwt.tokens import RefreshToken
 
 
 class User(AbstractUser, TimeStamp, DeleteMixin):
-
     class Roles(models.TextChoices):
         OWNER = 'user', 'Owner'
         MANAGER = 'manager', 'Manager'
-
+        
     first_name = None
     last_name = None
     email = None
+    groups = None
+    user_permissions = None
 
     full_name = models.CharField(
         max_length=255, verbose_name='Full Name'
@@ -33,7 +34,6 @@ class User(AbstractUser, TimeStamp, DeleteMixin):
     USERNAME_FIELD = "username"
     REQUIRED_FIELDS = []
 
-
     objects = UserManager()
 
     def get_tokens_for_user(self):
@@ -46,5 +46,3 @@ class User(AbstractUser, TimeStamp, DeleteMixin):
 
     def __str__(self):
         return self.username
-
-
