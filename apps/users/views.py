@@ -1,3 +1,4 @@
+from rest_framework import generics
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -24,3 +25,18 @@ class LoginAPIView(APIView):
             },
             status=status.HTTP_200_OK
         )
+
+
+class ProfileAPIView(generics.RetrieveAPIView):
+
+    def get_object(self):
+        return self.request.user
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        return Response({
+            "id": instance.id,
+            "username": instance.username,
+            "full_name": instance.full_name,
+        })
+

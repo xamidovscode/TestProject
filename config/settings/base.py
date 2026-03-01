@@ -83,6 +83,9 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'apps.users.permissions.IsAuthenticated',
+    )
 }
 
 LANGUAGE_CODE = 'en-us'
@@ -94,3 +97,4 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = 'static/'
+APPEND_SLASH=False
