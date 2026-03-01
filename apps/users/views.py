@@ -28,7 +28,7 @@ class LoginAPIView(APIView):
         )
 
 
-class ProfileAPIView(generics.RetrieveAPIView):
+class ProfileAPIView(generics.GenericAPIView):
 
     def get_object(self):
         return self.request.user
