@@ -8,3 +8,4 @@ INSTALLED_APPS += ["silk"]
 MIDDLEWARE += ["silk.middleware.SilkyMiddleware"]
 
 ROOT_URLCONF = "config.urls.local"
+DEBUG = True
