@@ -1,4 +1,6 @@
+import os
 from pathlib import Path
+
 from decouple import config
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -9,14 +11,15 @@ DEBUG = config('DEBUG', default=False, cast=bool)
 
 ALLOWED_HOSTS = ['*']
 
-INSTALLED_APPS = [
-    "rest_framework",
+DJANGO_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+]
+CUSTOM_APPS = [
     'apps.common',
     'apps.users',
     'apps.forms',
@@ -24,8 +27,18 @@ INSTALLED_APPS = [
     'apps.pipelines',
     'apps.tasks',
 ]
+THIRD_PARTY_APPS = [
+    "rest_framework",
+    "corsheaders",
+    "drf_spectacular",
+    "rest_framework_simplejwt",
+    "django_filters",
+]
+
+INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + CUSTOM_APPS
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -35,7 +48,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'config.urls'
+ROOT_URLCONF = 'config.urls.base'
 AUTH_USER_MODEL = "users.User"
 
 TEMPLATES = [
@@ -54,7 +67,6 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'config.wsgi.application'
-
 
 DATABASES = {
     "default": {
@@ -88,7 +100,19 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_PERMISSION_CLASSES': (
         'apps.users.permissions.IsAuthenticated',
-    )
+    ),
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_FILTER_BACKENDS": (
+        "django_filters.rest_framework.DjangoFilterBackend",
+        "rest_framework.filters.SearchFilter",
+    ),
+}
+
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": os.getenv("REDIS_URL", "redis://localhost:6379/0"),
+    }
 }
 
 LANGUAGE_CODE = 'en-us'
@@ -100,4 +124,4 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = 'static/'
-APPEND_SLASH=False
+APPEND_SLASH = False

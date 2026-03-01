@@ -14,7 +14,7 @@ class User(AbstractUser, TimeStamp, DeleteMixin):
     class Roles(models.TextChoices):
         OWNER = 'user', 'Owner'
         MANAGER = 'manager', 'Manager'
-        
+
     first_name = None
     last_name = None
     email = None
@@ -27,8 +27,13 @@ class User(AbstractUser, TimeStamp, DeleteMixin):
     phone = models.CharField(
         max_length=255, verbose_name='Phone Number'
     )
-    role = models.CharField(
-        choices=Roles.choices, default=Roles.OWNER,
+    role = models.ForeignKey(
+        "users.Role",
+        on_delete=models.PROTECT,
+        verbose_name='Role',
+        related_name='users',
+        null=True,
+        blank=True,
     )
 
     USERNAME_FIELD = "username"

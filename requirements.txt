@@ -5,5 +5,9 @@ djangorestframework_simplejwt==5.5.1
 psycopg[binary]
 gunicorn
 django-silk==5.4.3
-
-
+django-cors-headers
+django-filter
+drf-spectacular
+redis
+hiredis
+django-redis
