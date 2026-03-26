@@ -20,7 +20,9 @@ DJANGO_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 ]
-CUSTOM_APPS = []
+CUSTOM_APPS = [
+    'apps.users'
+]
 
 THIRD_PARTY_APPS = [
     "rest_framework",
@@ -167,4 +169,5 @@ SIMPLE_JWT = {
     "REVOKE_TOKEN_CLAIM": "hash_password",
     "CHECK_USER_IS_ACTIVE": True,
 }
+AUTH_USER_MODEL = "users.User"
 
