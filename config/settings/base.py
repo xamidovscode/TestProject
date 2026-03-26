@@ -20,14 +20,8 @@ DJANGO_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 ]
-CUSTOM_APPS = [
-    'apps.common',
-    'apps.users',
-    'apps.forms',
-    'apps.leads',
-    'apps.pipelines',
-    'apps.tasks',
-]
+CUSTOM_APPS = []
+
 THIRD_PARTY_APPS = [
     "rest_framework",
     "corsheaders",
