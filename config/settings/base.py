@@ -44,7 +44,7 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'config.urls.base'
-AUTH_USER_MODEL = "users.User"
+# AUTH_USER_MODEL = "users.User"
 
 TEMPLATES = [
     {
@@ -94,7 +94,7 @@ REST_FRAMEWORK = {
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
     'DEFAULT_PERMISSION_CLASSES': (
-        'apps.users.permissions.IsAuthenticated',
+        # 'apps.users.permissions.IsAuthenticated',
     ),
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_FILTER_BACKENDS": (
