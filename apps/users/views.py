@@ -1,35 +1,38 @@
-from pyexpat.errors import messages
-from threading import gettrace
+from rest_framework import generics, status
+from rest_framework.response import Response
 
-from  rest_framework import  generics, status
-from  rest_framework.response import Response
-from .serializers import RegisterSerializer, VerifyEmailSerializer
-from django.conf import settings
+from .serializers import RegisterSerializer
+from .services.services import save_pending_registration
+from .serializers import VerifyEmailSerializer
+from .services.services import (
+    verify_email_registration,
+    PendingRegistrationExpiredError,
+    VerificationCodeExpiredError,
+    InvalidVerificationCodeError,
+    UserAlreadyExistsError,
+)
 
 class RegisterAPIView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
 
-    def create(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = serializer.save()
 
-        response_data = {
-                "messages":"User registered successfully",
-                'user':{
-                    'id':user.id,
-                    'email':user.email,
-                    'username':user.username,
-                    'full_name':user.full_name,
-                    'is_verified':user.is_verified,
-                    'created_at':user.created_at,
-                },
-            }
-        if settings.DEBUG:
-            response_data["verification_token"] = getattr(
-                user,
-                "verification_token", None)
-            return Response(response_data, status=status.HTTP_201_CREATED)
+        validated_data = serializer.validated_data
+
+        save_pending_registration(
+            email=validated_data["email"],
+            full_name=validated_data["full_name"],
+            password=validated_data["password"],
+        )
+
+        return Response(
+            {
+                "message": "Registration data saved successfully. Please complete verification."
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
 class VerifyEmailAPIView(generics.GenericAPIView):
     serializer_class = VerifyEmailSerializer
@@ -37,17 +40,24 @@ class VerifyEmailAPIView(generics.GenericAPIView):
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = serializer.save()
 
+        data = serializer.to_service_data()
+
+        try:
+            user = verify_email_registration(data)
+        except PendingRegistrationExpiredError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except VerificationCodeExpiredError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except InvalidVerificationCodeError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except UserAlreadyExistsError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_409_CONFLICT)
 
         return Response(
             {
-                "messages":"Email verified successfully",
-                'user':{
-                    'id':str(user.id),
-                    'email':user.email,
-                    'is_verified':user.is_verified,
-                }
-        },
-            status=status.HTTP_200_OK
+                "message": "Email verified successfully",
+                "user_id": str(user.id),
+            },
+            status=status.HTTP_201_CREATED,
         )

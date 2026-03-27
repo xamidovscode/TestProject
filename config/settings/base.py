@@ -4,6 +4,7 @@ from pathlib import Path
 
 from decouple import config
 
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = config('SECRET_KEY')
@@ -11,6 +12,12 @@ SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=False, cast=bool)
 
 ALLOWED_HOSTS = ['*']
+
+from decouple import config
+
+REDIS_HOST = config("REDIS_HOST", default="127.0.0.1")
+REDIS_PORT = config("REDIS_PORT", cast=int, default=6379)
+REDIS_DB = config("REDIS_DB", cast=int, default=0)
 
 DJANGO_APPS = [
     'django.contrib.admin',
