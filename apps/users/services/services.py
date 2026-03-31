@@ -1,21 +1,37 @@
-import json
+import random
+from datetime import timedelta
 
 from django.contrib.auth import get_user_model
-from django.contrib.auth.hashers import make_password
 from django.db import transaction
+from django.utils import timezone
 
 from .redis_client import redis_client
 
 User = get_user_model()
 
-PENDING_REGISTRATION_TTL = 120
+VERIFY_CODE_TTL = 60
+REGISTER_COOLDOWN_TTL = 60
+REGISTER_MAX_COUNT = 3
+REGISTER_LIMIT_WINDOW = 60 * 60 * 12
+
+RESEND_COOLDOWN_TTL = 60
+RESEND_MAX_COUNT = 5
+RESEND_LIMIT_WINDOW = 60 * 60 * 12
 
 
 class VerificationError(Exception):
     pass
 
 
-class PendingRegistrationExpiredError(VerificationError):
+class UserAlreadyExistsError(VerificationError):
+    pass
+
+
+class UserNotFoundError(VerificationError):
+    pass
+
+
+class UserAlreadyVerifiedError(VerificationError):
     pass
 
 
@@ -27,7 +43,17 @@ class InvalidVerificationCodeError(VerificationError):
     pass
 
 
-class UserAlreadyExistsError(VerificationError):
+class RegisterCooldownError(VerificationError):
+    pass
+
+
+class RegisterLimitExceededError(VerificationError):
+    pass
+
+class ResendCooldownError(VerificationError):
+    pass
+
+class ResendLimitExceededError(VerificationError):
     pass
 
 
@@ -35,97 +61,230 @@ def normalize_email(email: str) -> str:
     return email.strip().lower()
 
 
-def get_pending_user_key(email: str) -> str:
-    return f"pending_user:{normalize_email(email)}"
+def get_email_verify_code_key(email: str) -> str:
+    return f"email_verify_code:{normalize_email(email)}"
 
 
-def get_verify_code_key(email: str) -> str:
-    return f"verify_code:{normalize_email(email)}"
+def generate_verification_code() -> str:
+    return str(random.randint(100000, 999999))
 
 
-def save_pending_registration(email: str, full_name: str, password: str) -> None:
-    email = normalize_email(email)
-    full_name = full_name.strip()
-
-    hashed_password = make_password(password)
-
-    data = {
-        "email": email,
-        "full_name": full_name,
-        "password": hashed_password,
-    }
-
-    redis_client.setex(
-        get_pending_user_key(email),
-        PENDING_REGISTRATION_TTL,
-        json.dumps(data),
-    )
+def save_email_verification_code(email: str, code: str) -> None:
+    key = get_email_verify_code_key(email)
+    redis_client.setex(key, VERIFY_CODE_TTL, code)
 
 
-def get_pending_registration(email: str) -> dict | None:
-    email = normalize_email(email)
-
-    data = redis_client.get(get_pending_user_key(email))
-    if not data:
-        return None
-
-    return json.loads(data)
+def get_email_verification_code(email: str) -> str | None:
+    key = get_email_verify_code_key(email)
+    return redis_client.get(key)
 
 
-def delete_pending_registration(email: str) -> None:
-    email = normalize_email(email)
-    redis_client.delete(get_pending_user_key(email))
+def delete_email_verification_code(email: str) -> None:
+    key = get_email_verify_code_key(email)
+    redis_client.delete(key)
 
 
-def get_verification_code(email: str) -> str | None:
-    email = normalize_email(email)
-    return redis_client.get(get_verify_code_key(email))
+def get_register_cooldown_key(email: str) -> str:
+    return f"register_cooldown:{normalize_email(email)}"
 
 
-def delete_verification_code(email: str) -> None:
-    email = normalize_email(email)
-    redis_client.delete(get_verify_code_key(email))
+def has_register_cooldown(email: str) -> bool:
+    key = get_register_cooldown_key(email)
+    return redis_client.exists(key) == 1
 
 
-def clear_verification_data(email: str) -> None:
-    email = normalize_email(email)
-    redis_client.delete(
-        get_pending_user_key(email),
-        get_verify_code_key(email),
-    )
+def set_register_cooldown(email: str) -> None:
+    key = get_register_cooldown_key(email)
+    redis_client.setex(key, REGISTER_COOLDOWN_TTL, "1")
+
+def get_register_count_key(email: str) -> str:
+    return f"register_count:{normalize_email(email)}"
+
+def get_register_count(email: str) -> int:
+    key = get_register_count_key(email)
+    value = redis_client.get(key)
+
+    if value is None:
+        return 0
+    return int(value)
+
+def has_exceeded_register_limit(email: str) -> bool:
+    return get_register_count(email) >= REGISTER_MAX_COUNT
+
+def increment_register_count(emil: str) -> None:
+    key = get_register_count_key(emil)
+    if redis_client.exists(key):
+        redis_client.incr(key)
+    else:
+        redis_client.setex(key, REGISTER_LIMIT_WINDOW, 1)
 
 
-def verify_email_registration(data: dict) -> User:
+def is_unverified_user_expired(user, hours: int = 24) -> bool:
+    if user.is_verified:
+        return False
+
+    expiration_time = user.created_at + timedelta(hours=hours)
+    return timezone.now() > expiration_time
+
+
+def register_user(data: dict) -> User:
+    email = normalize_email(data["email"])
+    full_name = data["full_name"].strip()
+    password = data["password"]
+
+    existing_user = User.objects.filter(email=email).first()
+
+    if existing_user and existing_user.is_verified:
+        raise UserAlreadyExistsError(
+            "User with this email was already verified."
+        )
+
+    if has_register_cooldown(email):
+        raise RegisterCooldownError(
+            "Please wait before requesting another verification code."
+        )
+
+    if has_exceeded_register_limit(email):
+        raise RegisterLimitExceededError(
+            "Too many registration attempts. Please try again later."
+        )
+
+    if existing_user:
+        if is_unverified_user_expired(existing_user):
+            existing_user.delete()
+
+            user = User.objects.create_user(
+                email=email,
+                password=password,
+                full_name=full_name,
+                is_verified=False,
+                is_active=True,
+            )
+        else:
+            existing_user.full_name = full_name
+            existing_user.set_password(password)
+            existing_user.save(update_fields=["full_name", "password"])
+            user = existing_user
+    else:
+        user = User.objects.create_user(
+            email=email,
+            password=password,
+            full_name=full_name,
+            is_verified=False,
+            is_active=True,
+        )
+
+    code = generate_verification_code()
+
+    print("===================================")
+    print(f"VERIFY CODE for {email}: {code}")
+    print("===================================")
+
+    save_email_verification_code(email, code)
+    set_register_cooldown(email)
+    increment_register_count(email)
+
+    return user
+
+
+def verify_email(data: dict) -> User:
     email = normalize_email(data["email"])
     code = data["code"].strip()
 
-    pending_user = get_pending_registration(email)
-    if pending_user is None:
-        raise PendingRegistrationExpiredError(
-            "Pending registration not found or expired."
+    user = User.objects.filter(email=email).first()
+
+    if not user:
+        raise UserNotFoundError(
+            "User with this email was not found."
         )
 
-    stored_code = get_verification_code(email)
+    if user.is_verified:
+        raise UserAlreadyVerifiedError(
+            "User is already verified."
+        )
+
+    stored_code = get_email_verification_code(email)
     if stored_code is None:
         raise VerificationCodeExpiredError(
             "Verification code not found or expired."
         )
 
     if stored_code != code:
-        raise InvalidVerificationCodeError("Invalid verification code.")
-
-    if User.objects.filter(email=email).exists():
-        clear_verification_data(email)
-        raise UserAlreadyExistsError("User already exists.")
-
-    with transaction.atomic():
-        user = User.objects.create(
-            email=pending_user["email"],
-            full_name=pending_user["full_name"],
-            password=pending_user["password"],
-            is_verified=True,
-            is_active=True,
+        raise InvalidVerificationCodeError(
+            "Invalid verification code."
         )
 
-    clear_verification_data(email)
+    with transaction.atomic():
+        user.is_verified = True
+        user.save(update_fields=["is_verified"])
+
+    delete_email_verification_code(email)
     return user
+
+
+def resend_verification_code(email: str) -> None:
+    email = normalize_email(email)
+    user = User.objects.filter(email = email).first()
+
+    if not user:
+        raise UserNotFoundError(
+            "User with this email was not found."
+        )
+
+    if user.is_verified:
+        raise UserAlreadyVerifiedError(
+            "User is already verified."
+        )
+
+    if has_resend_cooldown(email):
+        raise ResendCooldownError(
+            "Please wait before requesting another verification code."
+        )
+
+    if has_expeered_resend_limit(email):
+        raise ResendLimitExceededError(
+            "Too many resend attempts. Please try again later."
+        )
+    code = generate_verification_code()
+    save_email_verification_code(email, code)
+    set_resend_cooldown(email)
+    increment_resend_count(email)
+
+    print("===================================")
+    print(f"RESEND VERIFY CODE for {email}: {code}")
+    print("===================================")
+
+def get_resend_cooldown_key(email: str) -> str:
+        return f"resend_cooldown:{normalize_email(email)}"
+
+def has_resend_cooldown(email: str) -> bool:
+    key = get_resend_cooldown_key(email)
+    return redis_client.exists(key) == 1
+
+def set_resend_cooldown(email: str) -> None:
+    key = get_resend_cooldown_key(email)
+    redis_client.setex(key, RESEND_COOLDOWN_TTL, "1")
+
+def get_resend_count_key(email: str) -> str:
+    return f"resend_count:{normalize_email(email)}"
+
+def get_resend_count(email: str) -> int:
+    key = get_resend_count_key(email)
+    value = redis_client.get(key)
+
+    if value is None:
+        return 0
+    return int(value)
+
+def has_expeered_resend_limit(email: str) -> bool:
+    return get_resend_count(email) >= RESEND_MAX_COUNT
+
+def increment_resend_count(email: str) -> int:
+    key = get_resend_count_key(email)
+
+    if redis_client.exists(key):
+        redis_client.incr(key)
+    else:
+        redis_client.setex(key, RESEND_LIMIT_WINDOW, "1")
+
+

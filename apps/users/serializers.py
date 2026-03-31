@@ -7,13 +7,8 @@ class RegisterSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True, min_length=8)
 
     def validate_email(self, value):
-        value = value.strip().lower()
+        return value.strip().lower()
 
-        if User.objects.filter(email__iexact=value).exists():
-            raise serializers.ValidationError(
-                "A user with this email already exists."
-            )
-        return value
 
     def validate_full_name(self, value):
         value = value.strip()
@@ -35,20 +30,43 @@ class RegisterSerializer(serializers.Serializer):
                 "Password cannot be entirely numeric."
             )
         return value
+    def to_service_data(self)->dict:
+        return self.validated_data
 
 
 class VerifyEmailSerializer(serializers.Serializer):
     email = serializers.EmailField()
-    code = serializers.CharField(min_length=6,max_length=10)
+    code = serializers.CharField(min_length=6,max_length=6)
 
     def validate_email(self, value):
         return value.strip().lower()
 
     def validate_code(self, value):
         value = value.strip()
+
         if not value:
-            raise serializers.ValidationError("Validation code is required.")
+            raise serializers.ValidationError("Verification code is required.")
+
+        if not value.isdigit():
+            raise serializers.ValidationError(
+                "Verification code must contain only digits."
+            )
+
+        if len(value) != 6:
+            raise serializers.ValidationError(
+                "Verification code must be exactly 6 digits."
+            )
+
         return value
+
+    def to_service_data(self)->dict:
+        return self.validated_data
+
+class ResendCodeSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+    def validate_email(self, value):
+        return value.strip().lower()
 
     def to_service_data(self)->dict:
         return self.validated_data
