@@ -1,12 +1,19 @@
+from wsgiref import validate
+
+from asgiref import timeout
+from django.db.migrations import serializer
 from rest_framework import generics, status
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
+from yaml import serialize_all
 
+from utils.auth import generate_auth_code, send_verify_code
+from django.core.cache import cache
 from .serializers import (
     RegisterSerializer,
     VerifyEmailSerializer,
     ResendCodeSerializer
-)
+    )
 from .services.services import (
     register_user,
     verify_email,
@@ -22,218 +29,80 @@ from .services.services import (
     RegisterLimitExceededError,
 
     ResendCooldownError,
-    ResendLimitExceededError, User
-)
-
-from utils.auth import generate_auth_code, send_verify_code
-from django.core.cache import cache
-
-
-# class RegisterAPIView(generics.CreateAPIView):
-#     serializer_class = RegisterSerializer
-#
-#     def post(self,request,*args,**kwargs):
-#         serializer = self.get_serializer(data=request.data)
-#         serializer.is_valid(raise_exception=True)
-#
-#         data = serializer.validated_data
-#
-#         try:
-#             user = register_user(data)
-#
-#         except UserAlreadyExistsError as e:
-#             return Response(
-#             {"detail": str(e)},
-#                 status=status.HTTP_409_CONFLICT
-#             )
-#
-#         except RegisterCooldownError as e:
-#             return Response(
-#                 {"detail": str(e)},
-#                 status=status.HTTP_429_TOO_MANY_REQUESTS
-#             )
-#
-#         except RegisterLimitExceededError as e:
-#             return Response(
-#                 {"detail": str(e)},
-#                 status=status.HTTP_429_TOO_MANY_REQUESTS
-#             )
-#
-#         return Response(
-#             {
-#                 "message": "Registration successful. Verification code has been generated.",
-#                 "email": user.email,
-#                 "is_verified": user.is_verified,
-#             }
-#         )
-
-
+    ResendLimitExceededError, User, save_email_verification_code
+    )
 class RegisterAPIView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
 
-    def post(self,request,*args,**kwargs):
+    def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        data = serializer.validated_data
-        email = data['email']
+        validated_data = serializer.validated_data
+        email = validated_data['email']
 
-        if self.get_code_from_cache(email):
-            raise ValidationError({
-                "email": "Sizga allaqachon tasdiqlash kodi yuborilgan!"
-            })
+        if self.get_code_from_cach(email):
+            raise   ValidationError("Kod allaqachon yuborilgan")
 
         user = User.objects.filter(email=email, is_verified=False).first()
 
         if user:
-            user.full_name = data['full_name']
-            user.password = data['password']
+            user.full_name = validated_data['full_name']
+            user.password = validated_data['password']
             user.save()
 
         if not user:
-            user = User.objects.create_user(email=email, password=data['password'], full_name=data['full_name'])
+            user = User.objects.filter(
+                email=email,
+                full_name=validated_data['full_name'],
+                password=validated_data['password']
+            )
 
         code = generate_auth_code()
         send_verify_code(email, code)
-        self.save_code_to_cache(email, code)
+        self.save_code_to_cach(email, code)
         return Response({"success": True})
 
+
     @staticmethod
-    def save_code_to_cache(email, code):
-        key = f"verify_email:{email}"
+    def save_code_to_cach(email,code):
+        key = f"verify_{email}"
         cache.set(key, code, timeout=120)
 
     @staticmethod
-    def get_code_from_cache(email):
-        return cache.get(f"verify_email:{email}")
+    def get_code_from_cach(email,code):
+        return code.get(f"verify_email: {email}")
 
-
-class VerifyEmailAPIView(generics.GenericAPIView):
+class VerifyEmailAPIView(generics.RetrieveAPIView):
     serializer_class = VerifyEmailSerializer
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        validated_data = serializer.validated_data
 
+        validated_data = serializer.validated_data
         email = validated_data['email']
         code = validated_data['code']
 
-        code_from_cache = self.get_code_from_cache(email)
+        code_from_cache = self.get_code_from_cach(email, code)
 
         if not code_from_cache:
-            raise ValidationError({
-                'code': "Kod eskirgan qayta ro'yhatdan o'ting!"
-            })
+            raise ValidationError("Kod eskirgan qaytadan ro'hatdan o'ting.")
 
-        if code_from_cache != code:
-            raise ValidationError({
-                "code": "Xato kod kiritildi!"
-            })
+        if code != code_from_cache:
+            raise ValidationError("Xato kod kiritildi.")
 
         user = User.objects.filter(email=email).first()
 
         if user.is_verified:
-            raise ValidationError({
-                "code": "Allaqschon tasdiqlandi tizimga kiring!!"
-            })
+            raise ValidationError("Allaqachon tasdiqlangan tizimga kiring.")
 
         user.is_verified = True
         user.save()
-
-        return Response(
-            {"message": "Email verified successfully."},
-            status=status.HTTP_200_OK
-        )
+        return Response({"success": True})
 
     @staticmethod
-    def get_code_from_cache(email):
-        key = f"verify_email:{email}"
+    def get_code_from_cach(email):
+        key = f"verify_{email}"
         return cache.get(key)
 
-
-
-# class VerifyEmailAPIView(generics.GenericAPIView):
-#     serializer_class = VerifyEmailSerializer
-#
-#     def post(self, request, *args, **kwargs):
-#         serializer = self.get_serializer(data=request.data)
-#         serializer.is_valid(raise_exception=True)
-#         data = serializer.to_service_data()
-#
-#         try:
-#             user = verify_email(data)
-#         except UserNotFoundError as e:
-#             return Response(
-#                 {"detail": str(e)},
-#                 status=status.HTTP_404_NOT_FOUND
-#             )
-#         except UserAlreadyVerifiedError as e:
-#             return Response(
-#                 {"detail": str(e)},
-#                 status=status.HTTP_400_BAD_REQUEST
-#             )
-#         except VerificationCodeExpiredError as e:
-#             return Response(
-#                 {"detail": str(e)},
-#                 status=status.HTTP_400_BAD_REQUEST
-#             )
-#         except InvalidVerificationCodeError as e:
-#             return Response(
-#                 {"detail": str(e)},
-#                 status=status.HTTP_400_BAD_REQUEST
-#             )
-#
-#         return Response(
-#             {
-#                 "message": "Email verified successfully.",
-#                 "email": user.email,
-#                 "is_verified": user.is_verified,
-#             },
-#             status=status.HTTP_200_OK
-#         )
-
-
-
-# class ResendCodeAPIView(generics.GenericAPIView):
-#     serializer_class = ResendCodeSerializer
-#
-#     def post(self, request, *args, **kwargs):
-#         serializer = self.get_serializer(data=request.data)
-#         serializer.is_valid(raise_exception=True)
-#
-#         data = serializer.to_service_data()
-#         resend_verification_code(**data)
-#
-#         try:
-#             resend_verification_code(**data)
-#         except UserNotFoundError as e:
-#             return Response(
-#                 {"detail": str(e)},
-#                 status=status.HTTP_404_NOT_FOUND
-#             )
-#
-#         except UserAlreadyVerifiedError as e:
-#             return Response(
-#                 {"detail": str(e)},
-#                 status=status.HTTP_400_BAD_REQUEST
-#             )
-#
-#         except ResendCooldownError as e:
-#             return Response(
-#                 {"detail": str(e)},
-#                 status=status.HTTP_429_TOO_MANY_REQUESTS
-#             )
-#
-#         except ResendLimitExceededError as e:
-#             return Response(
-#                 {"detail": str(e)},
-#                 status=status.HTTP_429_TOO_MANY_REQUESTS
-#             )
-#
-#         return Response(
-#             {
-#                 "message": "Verification code sent.",
-#             },
-#             status=status.HTTP_200_OK
-#         )
