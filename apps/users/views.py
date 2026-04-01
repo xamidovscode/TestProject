@@ -99,7 +99,13 @@ class VerifyEmailAPIView(generics.RetrieveAPIView):
 
         user.is_verified = True
         user.save()
-        return Response({"success": True})
+
+        return Response(
+            {
+                "message": "Email verified successfully.",
+            },
+            status=status.HTTP_200_OK
+        )
 
     @staticmethod
     def get_code_from_cach(email):
