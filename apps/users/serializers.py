@@ -1,3 +1,5 @@
+from symtable import Class
+
 from rest_framework import serializers
 from .models import User
 
@@ -5,26 +7,37 @@ from .models import User
 class RegisterSerializer(serializers.Serializer):
     email = serializers.EmailField()
     full_name = serializers.CharField(
-        min_length=2, max_length=100,
-        write_only=True, required=False
+        min_length=2, max_length=100,write_only=True
     )
     password = serializers.CharField(
+        write_only=True, min_length=8, required=True
+    )
+    confirm_password = serializers.CharField(
         write_only=True, min_length=8, required=True
     )
 
     def validate(self, attrs):
         email = attrs['email']
+        password = attrs['password']
+        confirm_password = attrs['confirm_password']
 
         user = User.objects.filter(email=email, is_verified=True).first()
 
         if user:
             raise serializers.ValidationError({
-                'email': 'Bunday email allaqachon ro\'yhatdan o\'tgan!',
+                'email': "Bunday email allaqachon ro'yhatdan o'tgan!",
+            })
+
+
+        if password != confirm_password:
+            raise serializers.ValidationError({
+                "password": "Parollar mos emas",
             })
 
         return attrs
 
-
+    def validate_email(self, value):
+        return value.strip().lower()
 
 
 class VerifyEmailSerializer(serializers.Serializer):
@@ -38,5 +51,45 @@ class ResendCodeSerializer(serializers.Serializer):
     def validate_email(self, value):
         return value.strip().lower()
 
-    def to_service_data(self)->dict:
-        return self.validated_data
+class LoginSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField(
+        write_only=True,required=False,min_length=8
+    )
+
+
+class ForgotPasswordSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+    def validate_email(self, value):
+        return value.strip().lower()
+
+
+class VerifyResetCodeSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    code = serializers.CharField()
+
+    def validate_email(self, value):
+        return value.strip().lower()
+
+
+class ResetPasswordSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True, min_length=8, required=True)
+    confirm_password = serializers.CharField(write_only=True, min_length=8, required=True)
+
+    def validate(self,attrs):
+        email = attrs['email']
+        password = attrs.get('password')
+        confirm_password = attrs.get('confirm_password')
+
+        if password != confirm_password:
+            raise serializers.ValidationError({
+                "password": "Parollar mos emas",
+            })
+
+        return attrs
+
+    def validate_email(self, value):
+        return value.strip().lower()
+

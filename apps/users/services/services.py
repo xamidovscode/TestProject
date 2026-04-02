@@ -67,7 +67,7 @@ def get_email_verify_code_key(email: str) -> str:
 
 def generate_verification_code() -> str:
     return str(random.randint(100000, 999999))
-
+    
 
 def save_email_verification_code(email: str, code: str) -> None:
     key = get_email_verify_code_key(email)
