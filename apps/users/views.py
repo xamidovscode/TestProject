@@ -154,11 +154,7 @@ class ResendCodeAPIView(generics.GenericAPIView):
         code = generate_auth_code()
         send_verify_code(email, code)
         self.save_code_to_cache(email, code)
-        return Response({
-            "success": True,
-            },
-        status=status.HTTP_200_OK
-        )
+        return Response({"success": True}, status=status.HTTP_200_OK)
 
     @staticmethod
     def save_code_to_cache(email, code):
@@ -199,12 +195,7 @@ class LoginAPIView(generics.GenericAPIView):
                 "message": "Email yoki parol xato!"
             })
 
-
-        refresh = RefreshToken.for_user(user)
-        return  Response({
-            "refresh": str(refresh),
-            "access": str(refresh.access_token),
-        })
+        return  Response(user.get_tokens(), status=status.HTTP_200_OK)
 
 
 

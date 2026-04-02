@@ -7,7 +7,7 @@ from .models import User
 class RegisterSerializer(serializers.Serializer):
     email = serializers.EmailField()
     full_name = serializers.CharField(
-        min_length=2, max_length=100,write_only=True
+        min_length=2, max_length=100, write_only=True
     )
     password = serializers.CharField(
         write_only=True, min_length=8, required=True
@@ -36,9 +36,6 @@ class RegisterSerializer(serializers.Serializer):
 
         return attrs
 
-    def validate_email(self, value):
-        return value.strip().lower()
-
 
 class VerifyEmailSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -48,29 +45,21 @@ class VerifyEmailSerializer(serializers.Serializer):
 class ResendCodeSerializer(serializers.Serializer):
     email = serializers.EmailField()
 
-    def validate_email(self, value):
-        return value.strip().lower()
 
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(
-        write_only=True,required=False,min_length=8
+        write_only=True, required=False, min_length=8
     )
 
 
 class ForgotPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField()
 
-    def validate_email(self, value):
-        return value.strip().lower()
-
 
 class VerifyResetCodeSerializer(serializers.Serializer):
     email = serializers.EmailField()
     code = serializers.CharField()
-
-    def validate_email(self, value):
-        return value.strip().lower()
 
 
 class ResetPasswordSerializer(serializers.Serializer):
@@ -88,7 +77,3 @@ class ResetPasswordSerializer(serializers.Serializer):
             })
 
         return attrs
-
-    def validate_email(self, value):
-        return value.strip().lower()
-
