@@ -12,7 +12,7 @@ from django.core.cache import cache
 from .serializers import (
     RegisterSerializer,
     VerifyEmailSerializer,
-    ResendCodeSerializer, LoginSerializer
+    ResendCodeSerializer, LoginSerializer, ForgotPasswordSerializer
 )
 User = get_user_model()
 
