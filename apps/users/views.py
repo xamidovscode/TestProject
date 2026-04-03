@@ -1,10 +1,7 @@
-import email
-
 from rest_framework import generics, status
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
-from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from utils.auth import generate_auth_code, send_verify_code
@@ -18,8 +15,8 @@ from .serializers import (
     ResendResetCodeSerializer,
     VerifyResetCodeSerializer, ResetPasswordSerializer, LogoutSerializer
 )
+from apps.users.models import User
 
-User = get_user_model()
 
 class RegisterAPIView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
@@ -214,17 +211,12 @@ class ForgotPasswordAPIView(generics.GenericAPIView):
         validated_data = serializer.validated_data
         email = validated_data['email']
 
-        user = User.objects.filter(email=email).first()
+        user = User.objects.filter(email=email, is_verified=True).first()
         code_from_cache = self.get_code_from_cache(email)
 
         if not user:
             raise ValidationError({
                 "message": "User topilmadi!"
-            })
-
-        if not user.is_verified:
-            raise ValidationError({
-                "message": "Email tasdiqlanmagan, avval emailni tasdiqlangan!"
             })
 
         if code_from_cache:
@@ -265,7 +257,7 @@ class VerifyResetCodeAPIView(generics.GenericAPIView):
         email = validated_data['email']
         code = validated_data['code']
 
-        user = User.objects.filter(email=email).first()
+        user = User.objects.filter(email=email, is_verified=True).first()
         code_from_cache = self.get_reset_code_from_cache(email)
 
         if not user:
@@ -359,7 +351,7 @@ class ResetPasswordAPIView(generics.GenericAPIView):
         email = validated_data['email']
         password = validated_data['password']
 
-        user = User.objects.filter(email=email).first()
+        user = User.objects.filter(email=email, is_verified=True).first()
 
         if not user:
             raise ValidationError({
