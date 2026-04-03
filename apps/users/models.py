@@ -2,6 +2,8 @@ import uuid
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.db import models
 from .managers import UserManager
+from rest_framework_simplejwt.tokens import RefreshToken
+
 
 
 class TimeStampedModel(models.Model):

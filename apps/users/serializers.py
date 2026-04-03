@@ -1,4 +1,3 @@
-from symtable import Class
 
 from rest_framework import serializers
 from .models import User
@@ -62,6 +61,10 @@ class VerifyResetCodeSerializer(serializers.Serializer):
     code = serializers.CharField()
 
 
+class ResendResetCodeSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+
 class ResetPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True, min_length=8, required=True)
@@ -77,3 +80,10 @@ class ResetPasswordSerializer(serializers.Serializer):
             })
 
         return attrs
+
+
+class LogoutSerializer(serializers.Serializer):
+    refresh_token = serializers.CharField()
+
+
+
