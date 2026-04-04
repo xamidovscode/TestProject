@@ -70,7 +70,7 @@ class ResetPasswordSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True, min_length=8, required=True)
     confirm_password = serializers.CharField(write_only=True, min_length=8, required=True)
 
-    def validate(self,attrs):
+    def validate(self, attrs):
         password = attrs.get('password')
         confirm_password = attrs.get('confirm_password')
 
