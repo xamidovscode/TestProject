@@ -1,3 +1,5 @@
+from time import time
+
 from rest_framework import generics, status
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
@@ -29,6 +31,14 @@ class RegisterAPIView(generics.CreateAPIView):
         email = validated_data['email']
         password = validated_data['password']
 
+        count = self.get_sms_count(email)
+
+        if count >= 5:
+
+            raise ValidationError({
+                "message": "Juda ko'p urinish, keyinroq qayta urinib ko'ring"
+            })
+
         if self.get_code_from_cache(email):
             raise ValidationError({
                 "message": "Sizga allaqachon kod yuborilgan!"
@@ -54,11 +64,13 @@ class RegisterAPIView(generics.CreateAPIView):
             )
         code = generate_auth_code()
         send_verify_code(email, code)
+
         self.save_code_to_cache(email, code)
+        self.increment_sms_count(email)
         return Response(
             {
-                "success": True,
-            }
+            "success": True,
+        }
         )
 
     @staticmethod
@@ -71,7 +83,28 @@ class RegisterAPIView(generics.CreateAPIView):
         key = f"verify_code:{email}"
         return cache.get(key)
 
-class ValidateEmailAPIView(generics.GenericAPIView):
+    @staticmethod
+    def get_sms_count(email):
+        key = f"sms_count:{email}"
+        count = cache.get(key)
+
+        if count is None:
+            return 0
+
+        return count
+
+    @staticmethod
+    def increment_sms_count(email):
+        key = f"sms_count:{email}"
+        count = cache.get(key)
+
+        if count is None:
+            cache.set(key, 1, timeout=43200)
+        else:
+            cache.set(key, count + 1, timeout=43200)
+
+
+class VerifyEmailAPIView(generics.GenericAPIView):
     serializer_class = VerifyEmailSerializer
 
     def post(self, request, *args, **kwargs):
@@ -83,6 +116,17 @@ class ValidateEmailAPIView(generics.GenericAPIView):
         code = validated_data['code']
 
         code_from_cache = self.get_code_from_cache(email)
+        user = User.objects.filter(email=email).first()
+
+        if not user:
+            raise ValidationError({
+                "message": "User topilmadi"
+            })
+
+        if user.is_verified:
+            raise ValidationError({
+                "message": "Allaqachon tasdiqlangan, tizimga kiring."
+            })
 
         if not code_from_cache:
             raise ValidationError({
@@ -90,21 +134,25 @@ class ValidateEmailAPIView(generics.GenericAPIView):
             })
 
         if code != code_from_cache:
-            raise ValidationError({
-                    "message": "Xato kod kiritildi."
+            self.increment_count_attempts(email)
+            count = self.get_attempts_count(email)
+
+            if count >= 3:
+                self.clear_verify_attempts(email)
+                self.delete_code_from_cache(email)
+                raise ValidationError({
+                    "message": "Juda ko'p xato urinish. Yangi kod so'rang"
                 })
 
-        user = User.objects.filter(email=email).first()
-
-        if user.is_verified:
             raise ValidationError({
-                "message" :"Allaqachon tasdiqlangan, tizimga kiring."
+                "message": "Xato kod kiritildi"
             })
 
         user.is_verified = True
         user.save(update_fields=["is_verified"])
 
         self.delete_code_from_cache(email)
+        self.clear_verify_attempts(email)
 
         return Response(
             {
@@ -123,6 +171,33 @@ class ValidateEmailAPIView(generics.GenericAPIView):
         key = f"verify_code:{email}"
         cache.delete(key)
 
+    @staticmethod
+    def increment_count_attempts(email):
+        key = f"verify_attempts:{email}"
+        count = cache.get(key)
+
+        if count is None:
+            cache.set(key, 1, 120)
+        else:
+            cache.set(key, count + 1, 120)
+
+    @staticmethod
+    def get_attempts_count(email):
+        key = f"verify_attempts:{email}"
+        count = cache.get(key)
+
+        if count is None:
+            return 0
+        return count
+
+    @staticmethod
+    def clear_verify_attempts(email):
+        key = f"verify_attempts:{email}"
+        cache.delete(key)
+
+
+
+
 
 class ResendCodeAPIView(generics.GenericAPIView):
     serializer_class = ResendCodeSerializer
@@ -133,6 +208,13 @@ class ResendCodeAPIView(generics.GenericAPIView):
 
         validated_data = serializer.validated_data
         email = validated_data['email']
+
+        count = self.get_sms_code(email)
+
+        if count >= 5:
+            raise ValidationError({
+                "message": "Juda ko'p urinish, keyinroq qaytaday urinib ko'ring"
+            })
 
         code_from_cache = self.get_code_from_cache(email)
 
@@ -155,7 +237,9 @@ class ResendCodeAPIView(generics.GenericAPIView):
 
         code = generate_auth_code()
         send_verify_code(email, code)
+
         self.save_code_to_cache(email, code)
+        self.increment_sms_count(email)
         return Response({"success": True}, status=status.HTTP_200_OK)
 
     @staticmethod
@@ -167,6 +251,27 @@ class ResendCodeAPIView(generics.GenericAPIView):
     def get_code_from_cache(email):
         key = f"verify_code:{email}"
         return cache.get(key)
+
+    @staticmethod
+    def get_sms_code(email):
+        key = f"sms_count:{email}"
+        count =  cache.get(key)
+
+        if count is None:
+            return 0
+
+        return count
+
+    @staticmethod
+    def increment_sms_count(email):
+        key = f"sms_count:{email}"
+        count = cache.get(key)
+
+        if count is None:
+            cache.set(key, 1, timeout=43200)
+        else:
+            cache.set(key, count + 1, timeout=43200)
+
 
 
 class LoginAPIView(generics.GenericAPIView):
@@ -211,6 +316,14 @@ class ForgotPasswordAPIView(generics.GenericAPIView):
         validated_data = serializer.validated_data
         email = validated_data['email']
 
+        count = self.get_sms_code(email)
+
+        if count >= 5:
+            raise ValidationError({
+                "message": "Juda ko'p urinish, keyinroq qaytaday urinib ko'ring"
+            })
+
+
         user = User.objects.filter(email=email, is_verified=True).first()
         code_from_cache = self.get_code_from_cache(email)
 
@@ -226,7 +339,9 @@ class ForgotPasswordAPIView(generics.GenericAPIView):
 
         code = generate_auth_code()
         send_verify_code(email, code)
+
         self.save_code_to_cache(email, code)
+        self.increment_sms_count(email)
 
         return Response(
             {
@@ -244,6 +359,25 @@ class ForgotPasswordAPIView(generics.GenericAPIView):
     def get_code_from_cache(email):
         key = f"reset_code:{email}"
         return cache.get(key)
+
+    @staticmethod
+    def get_sms_code(email):
+        key = f"sms_count:{email}"
+        count = cache.get(key)
+
+        if count is None:
+            return 0
+        return count
+
+    @staticmethod
+    def increment_sms_count(email):
+        key = f"sms_count:{email}"
+        count = cache.get(key)
+
+        if count is None:
+            cache.set(key, 1, timeout=43200)
+        else:
+            cache.set(key, count + 1, timeout=43200)
 
 
 class VerifyResetCodeAPIView(generics.GenericAPIView):
@@ -271,11 +405,24 @@ class VerifyResetCodeAPIView(generics.GenericAPIView):
             })
 
         if code != code_from_cache:
+            self.increment_reset_code_count(email)
+            count = self.get_attempts_count(email)
+
+            if count >= 3:
+                self.clear_attempts_count(email)
+                self.delete_reset_code_from_cache(email)
+
+                raise ValidationError({
+                    "message": "Juda ko'p xato urinish, qodni qaytadan yuboring"
+                })
+
             raise ValidationError({
                 "message": "Xato kod kiritildi!"
             })
 
         self.save_reset_verified_to_cache(email)
+        self.delete_reset_code_from_cache(email)
+        self.clear_attempts_count(email)
 
         return Response(
             {
@@ -294,6 +441,35 @@ class VerifyResetCodeAPIView(generics.GenericAPIView):
         key = f"reset_code:{email}"
         return cache.get(key)
 
+    @staticmethod
+    def delete_reset_code_from_cache(email):
+        key = f"reset_code:{email}"
+        cache.delete(key)
+
+    @staticmethod
+    def increment_reset_code_count(email):
+        key = f"reset_verify_attempts:{email}"
+        count = cache.get(key)
+
+        if count is None:
+            cache.set(key, 1, timeout=120)
+        else:
+            cache.set(key, count + 1, timeout=120)
+
+    @staticmethod
+    def get_attempts_count(email):
+        key = f"reset_verify_attempts:{email}"
+        count = cache.get(key)
+
+        if count is None:
+            return 0
+        return count
+
+    @staticmethod
+    def clear_attempts_count(email):
+        key = f"reset_verify_attempts:{email}"
+        cache.delete(key)
+
 
 class ResendResetCodeAPIView(generics.GenericAPIView):
     serializer_class = ResendResetCodeSerializer
@@ -304,6 +480,13 @@ class ResendResetCodeAPIView(generics.GenericAPIView):
 
         validated_data = serializer.validated_data
         email = validated_data['email']
+
+        count = self.get_sms_code(email)
+
+        if count >= 5:
+            raise ValidationError({
+                "message": "Juda ko'p urinish, keyinroq qaytadan urinib ko'ring"
+            })
 
         user = User.objects.filter(email=email).first()
         code_from_cache = self.get_reset_code_from_cache(email)
@@ -325,7 +508,9 @@ class ResendResetCodeAPIView(generics.GenericAPIView):
 
         code = generate_auth_code()
         send_verify_code(email, code)
+
         self.save_reset_code_to_cache(email, code)
+        self.increment_sms_count(email)
 
         return Response({"success": True}, status=status.HTTP_200_OK)
 
@@ -338,6 +523,25 @@ class ResendResetCodeAPIView(generics.GenericAPIView):
     def get_reset_code_from_cache(email):
         key = f"reset_code:{email}"
         return cache.get(key)
+
+    @staticmethod
+    def increment_sms_count(email):
+        key = f"sms_code:{email}"
+        count = cache.get(key)
+
+        if not count:
+            cache.set(key, 1, timeout=43200)
+        else:
+            cache.set(key, count + 1, timeout=43200)
+
+    @staticmethod
+    def get_sms_code(email):
+        key = f"sms_code:{email}"
+        count = cache.get(key)
+
+        if count is None:
+           return 0
+        return count
 
 
 class ResetPasswordAPIView(generics.GenericAPIView):

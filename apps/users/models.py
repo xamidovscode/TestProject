@@ -23,9 +23,13 @@ class User(AbstractBaseUser, PermissionsMixin, TimeStampedModel):
     email = models.EmailField(
         unique=True,
         db_index=True,
+
+        verbose_name='Email',
     )
     full_name = models.CharField(
         max_length=100,
+
+        verbose_name='Full Name',
     )
     is_verified = models.BooleanField(
         default=False,
