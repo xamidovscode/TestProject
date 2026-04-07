@@ -19,44 +19,45 @@ from .serializers import (
 class PostCreateAPIView(generics.CreateAPIView):
     queryset = Post.objects.all()
     serializer_class = PostWriteSerializer
-    permission_classes = (IsAuthenticated,IsVerifiedUser)
+    permission_classes = (IsAuthenticated, IsVerifiedUser)
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
 
 
 class PostListAPIView(generics.ListAPIView):
+    queryset = Post.objects.select_related('author').all().order_by('-created_at')
     serializer_class = PostListSerializer
     permission_classes = (AllowAny,)
     pagination_class = PostPagination
 
-    def get_queryset(self):
-        queryset = Post.objects.select_related('author').all().order_by('-created_at')
-
-        search = self.request.query_params.get('search')
-        date_from = self.request.query_params.get('date_from')
-        date_to = self.request.query_params.get('date_to')
-
-        if search:
-            search = search.strip()
-            queryset = queryset.filter(
-                Q(title__icontains=search) | Q(content__icontains=search)
-            )
-        if date_from:
-            try:
-                date_from = datetime.strptime(date_from, '%Y-%m-%d').date()
-                queryset = queryset.filter(created_at__date__gte=date_from)
-            except ValueError:
-                pass
-
-        if date_to:
-            try:
-                date_to = datetime.strptime(date_to, '%Y-%m-%d').date()
-                queryset = queryset.filter(created_at__date__lte=date_to)
-            except ValueError:
-                pass
-
-        return queryset
+    # def get_queryset(self):
+    #     queryset = Post.objects.select_related('author').all().order_by('-created_at')
+    #
+    #     search = self.request.query_params.get('search')
+    #     date_from = self.request.query_params.get('date_from')
+    #     date_to = self.request.query_params.get('date_to')
+    #
+    #     if search:
+    #         search = search.strip()
+    #         queryset = queryset.filter(
+    #             Q(title__icontains=search) | Q(content__icontains=search)
+    #         )
+    #     if date_from:
+    #         try:
+    #             date_from = datetime.strptime(date_from, '%Y-%m-%d').date()
+    #             queryset = queryset.filter(created_at__date__gte=date_from)
+    #         except ValueError:
+    #             pass
+    #
+    #     if date_to:
+    #         try:
+    #             date_to = datetime.strptime(date_to, '%Y-%m-%d').date()
+    #             queryset = queryset.filter(created_at__date__lte=date_to)
+    #         except ValueError:
+    #             pass
+    #
+    #     return queryset
 
 
 class PostDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
