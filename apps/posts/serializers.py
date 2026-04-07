@@ -13,7 +13,7 @@ class PostWriteSerializer(serializers.ModelSerializer):
 
 
 class PostListSerializer(serializers.ModelSerializer):
-    author_name = serializers.CharField(source='author.full_name',read_only=True)
+    author_name = serializers.CharField(source='author.full_name', read_only=True)
 
     class Meta:
         model = Post
@@ -28,7 +28,7 @@ class PostListSerializer(serializers.ModelSerializer):
         )
 
 class PostDetailSerializer(serializers.ModelSerializer):
-    author_name = serializers.CharField(source='author.full_name',read_only=True)
+    author_name = serializers.CharField(source='author.full_name', read_only=True)
     class Meta:
         model = Post
         fields = (
