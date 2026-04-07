@@ -4,6 +4,8 @@ from django.core.exceptions import ValidationError
 from django.db.models import Q
 from rest_framework import generics, status, response
 from rest_framework.permissions import IsAuthenticated,AllowAny
+from yaml import serializer
+
 from .permissions import IsVerifiedUser,IsOwnerOrReadOnly
 from rest_framework.response import Response
 from .pagination import PostPagination
@@ -67,6 +69,15 @@ class PostDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         if self.request.method == 'GET':
             return PostDetailSerializer
         return PostUpdateSerializer
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+
+        return Response({
+            "Post muvaffaqiyatli o‘chirildi"
+        },status=status.HTTP_204_NO_CONTENT)
+
 
 
 
