@@ -1,10 +1,8 @@
 from datetime import datetime
 
-from django.core.exceptions import ValidationError
 from django.db.models import Q
 from rest_framework import generics, status, response
 from rest_framework.permissions import IsAuthenticated,AllowAny
-from yaml import serializer
 
 from .permissions import IsVerifiedUser,IsOwnerOrReadOnly
 from rest_framework.response import Response
