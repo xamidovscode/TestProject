@@ -27,8 +27,10 @@ class PostListSerializer(serializers.ModelSerializer):
             "updated_at",
         )
 
+
 class PostDetailSerializer(serializers.ModelSerializer):
     author_name = serializers.CharField(source='author.full_name', read_only=True)
+
     class Meta:
         model = Post
         fields = (
