@@ -12,6 +12,7 @@ class IsVerifiedUser(BasePermission):
 
         return user.is_verified
 
+
 class IsOwnerOrReadOnly(BasePermission):
     def has_object_permission(self, request, view, obj):
 

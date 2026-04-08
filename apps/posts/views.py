@@ -46,6 +46,9 @@ class PostDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
             return PostDetailSerializer
         return PostUpdateSerializer
 
+    def get_queryset(self):
+        return self.queryset.filter(author=self.request.user)
+
 
 
 
