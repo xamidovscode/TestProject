@@ -1,12 +1,13 @@
-from datetime import datetime
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import generics, status
+from rest_framework.permissions import IsAuthenticated, AllowAny
 
-from django.db.models import Q
-from rest_framework import generics, status, response
-from rest_framework.permissions import IsAuthenticated,AllowAny
-
-from .permissions import IsVerifiedUser,IsOwnerOrReadOnly
+from apps.common.permissions import IsOwnerOrReadOnly, IsVerifiedUser
+from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.response import Response
-from .pagination import PostPagination
+
+from utils.filters import PostFilter
+from utils.pagination import PostPagination
 from .models import Post
 
 from .serializers import (
@@ -15,49 +16,32 @@ from .serializers import (
     PostUpdateSerializer,
     PostDetailSerializer)
 
+class PostListCreateAPIView(generics.ListCreateAPIView):
+    pagination_class = PostPagination
+    filter_backends = (DjangoFilterBackend, SearchFilter, OrderingFilter)
+    filterset_class = PostFilter
 
-class PostCreateAPIView(generics.CreateAPIView):
-    queryset = Post.objects.all()
-    serializer_class = PostWriteSerializer
-    permission_classes = (IsAuthenticated, IsVerifiedUser)
+    search_fields = ('author__full_name','title')
+    ordering_fields = ('title', 'created_at', 'updated_at')
+
+
+
+    def get_queryset(self):
+        queryset = Post.objects.select_related('author').all().order_by('-created_at')
+        return queryset
+
+    def get_serializer_class(self):
+        if self.request.method == 'GET':
+            return PostListSerializer
+        return PostWriteSerializer
+
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            return [AllowAny()]
+        return [IsAuthenticated(), IsVerifiedUser()]
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
-
-
-class PostListAPIView(generics.ListAPIView):
-    queryset = Post.objects.select_related('author').all().order_by('-created_at')
-    serializer_class = PostListSerializer
-    permission_classes = (AllowAny,)
-    pagination_class = PostPagination
-
-    # def get_queryset(self):
-    #     queryset = Post.objects.select_related('author').all().order_by('-created_at')
-    #
-    #     search = self.request.query_params.get('search')
-    #     date_from = self.request.query_params.get('date_from')
-    #     date_to = self.request.query_params.get('date_to')
-    #
-    #     if search:
-    #         search = search.strip()
-    #         queryset = queryset.filter(
-    #             Q(title__icontains=search) | Q(content__icontains=search)
-    #         )
-    #     if date_from:
-    #         try:
-    #             date_from = datetime.strptime(date_from, '%Y-%m-%d').date()
-    #             queryset = queryset.filter(created_at__date__gte=date_from)
-    #         except ValueError:
-    #             pass
-    #
-    #     if date_to:
-    #         try:
-    #             date_to = datetime.strptime(date_to, '%Y-%m-%d').date()
-    #             queryset = queryset.filter(created_at__date__lte=date_to)
-    #         except ValueError:
-    #             pass
-    #
-    #     return queryset
 
 
 class PostDetailAPIView(generics.RetrieveUpdateDestroyAPIView):

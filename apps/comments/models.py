@@ -1,20 +1,17 @@
 import uuid
-
 from django.db import models
 from apps.users.models import User
 from apps.posts.models import Post
+from apps.common.models import BaseModel
 
-class BaseModel(models.Model):
-    created = models.DateTimeField(auto_now_add=True)
-    updated = models.DateTimeField(auto_now=True)
 
 class Comment(BaseModel):
     id = models.UUIDField(
         primary_key=True,
-        default=uuid.uuid4(),
+        default=uuid.uuid4,
         editable=False,)
 
-    post_id = models.ForeignKey(
+    post = models.ForeignKey(
         Post,
         on_delete=models.CASCADE,
         related_name="comments",
@@ -22,7 +19,7 @@ class Comment(BaseModel):
         verbose_name="Post ID",
     )
 
-    author_id = models.ForeignKey(
+    author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         editable=False,
@@ -30,9 +27,9 @@ class Comment(BaseModel):
         verbose_name="Author ID",
     )
 
-    content = models.TextField()
+    comment = models.TextField(max_length=2000)
 
     def __str__(self):
-        return f"Comment by {self.author_id} on {self.post_id}"
+        return f"Comment by {self.author} on {self.post}"
 
 

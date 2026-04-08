@@ -36,7 +36,10 @@ DJANGO_APPS = [
 ]
 CUSTOM_APPS = [
     'apps.users',
-    'apps.posts'
+    'apps.posts',
+    'apps.comments',
+    'apps.common',
+    'apps.likes'
 ]
 
 THIRD_PARTY_APPS = [

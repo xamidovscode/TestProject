@@ -2,13 +2,8 @@ import uuid
 
 from django.db import models
 from apps.users.models import User
+from apps.common.models import BaseModel
 
-class BaseModel(models.Model):
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        abstract = True
 
 class Post(BaseModel):
     id = models.UUIDField(
@@ -29,7 +24,10 @@ class Post(BaseModel):
         verbose_name='Title'
     )
 
-    content = models.TextField()
+    content = models.TextField(
+        max_length=10000,
+        verbose_name='Content'
+    )
 
     def __str__(self):
         return self.title
