@@ -17,18 +17,11 @@ from .serializers import (
     PostDetailSerializer)
 
 class PostListCreateAPIView(generics.ListCreateAPIView):
-    pagination_class = PostPagination
+    queryset = Post.objects.select_related('author').order_by('-created_at')
     filter_backends = (DjangoFilterBackend, SearchFilter, OrderingFilter)
-    filterset_class = PostFilter
-
     search_fields = ('author__full_name','title')
-    ordering_fields = ('title', 'created_at', 'updated_at')
-
-
-
-    def get_queryset(self):
-        queryset = Post.objects.select_related('author').all().order_by('-created_at')
-        return queryset
+    pagination_class = PostPagination
+    filterset_class = PostFilter
 
     def get_serializer_class(self):
         if self.request.method == 'GET':
@@ -37,35 +30,21 @@ class PostListCreateAPIView(generics.ListCreateAPIView):
 
     def get_permissions(self):
         if self.request.method == 'GET':
-            return [AllowAny()]
-        return [IsAuthenticated(), IsVerifiedUser()]
+            return (AllowAny(), )
+        return IsAuthenticated(), IsVerifiedUser()
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
 
 
 class PostDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Post.objects.select_related('author').all()
-    permission_classes = [IsOwnerOrReadOnly]
+    queryset = Post.objects.select_related('author')
+    permission_classes = (IsOwnerOrReadOnly,)
 
     def get_serializer_class(self):
         if self.request.method == 'GET':
             return PostDetailSerializer
         return PostUpdateSerializer
-
-    def destroy(self, request, *args, **kwargs):
-        instance = self.get_object()
-        self.perform_destroy(instance)
-
-        return Response({
-            "Post muvaffaqiyatli o‘chirildi"
-        },status=status.HTTP_204_NO_CONTENT)
-
-
-
-
-
-
 
 
 
