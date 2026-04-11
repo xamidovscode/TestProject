@@ -13,7 +13,9 @@ DEBUG = config('DEBUG', default=False, cast=bool)
 
 ALLOWED_HOSTS = ['*']
 
-from decouple import config
+INTERNAL_IPS = [
+    "127.0.0.1"
+]
 
 REDIS_HOST = config("REDIS_HOST", default="127.0.0.1")
 REDIS_PORT = config("REDIS_PORT", cast=int, default=6379)
@@ -33,6 +35,7 @@ DJANGO_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'debug_toolbar'
 ]
 CUSTOM_APPS = [
     'apps.users',
@@ -47,12 +50,14 @@ THIRD_PARTY_APPS = [
     "corsheaders",
     "drf_spectacular",
     "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",
     "django_filters",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + CUSTOM_APPS
 
 MIDDLEWARE = [
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -64,7 +69,6 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'config.urls.base'
-# AUTH_USER_MODEL = "users.User"
 
 TEMPLATES = [
     {
@@ -94,6 +98,14 @@ DATABASES = {
     }
 }
 
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Social Network API",
+    "DESCRIPTION": "Authentication, posts, comments, likes API",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "SCHEMA_PATH_PREFIX": r"/api/v[0-9]",
+}
+
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -120,7 +132,10 @@ REST_FRAMEWORK = {
     "DEFAULT_FILTER_BACKENDS": (
         "django_filters.rest_framework.DjangoFilterBackend",
         "rest_framework.filters.SearchFilter",
+        "rest_framework.filters.OrderingFilter",
     ),
+    "DEFAULT_PAGINATION_CLASS": "utils.pagination.PostPagination",
+    "PAGE_SIZE": 10,
 }
 
 CACHES = {
@@ -143,7 +158,7 @@ APPEND_SLASH = False
 
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=720),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
     "ROTATE_REFRESH_TOKENS": False,
     "BLACKLIST_AFTER_ROTATION": False,

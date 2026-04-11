@@ -1,9 +1,9 @@
-from rest_framework import  generics, status
+from rest_framework import  generics
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 
-from apps.common.permissions import IsVerifiedUser, IsCommentOwner
+from utils.permissions import IsVerifiedUser, IsCommentOwner
+from drf_spectacular.utils import extend_schema_view,extend_schema
 from apps.posts.models import Post
 from .models import Comment
 from .serializers import (
@@ -11,6 +11,11 @@ from .serializers import (
     CommentWriteSerializer,
     CommentUpdateSerializer,
     CommentDetailSerializer
+)
+
+@extend_schema_view(
+    get=extend_schema(tags=["Comments"]),
+    post=extend_schema(tags=["Comments"]),
 )
 
 
@@ -24,8 +29,8 @@ class CommentListCreateAPIView(generics.ListCreateAPIView):
 
     def get_permissions(self):
         if self.request.method == 'GET':
-            return [AllowAny()]
-        return [IsAuthenticated(), IsVerifiedUser()]
+            return (AllowAny(),)
+        return (IsAuthenticated(), IsVerifiedUser())
 
     def get_serializer_class(self):
         if self.request.method == 'GET':
@@ -39,10 +44,17 @@ class CommentListCreateAPIView(generics.ListCreateAPIView):
             post=post
         )
 
+@extend_schema_view(
+    get=extend_schema(tags=["Comments"]),
+    put=extend_schema(tags=["Comments"]),
+    patch=extend_schema(tags=["Comments"]),
+    delete=extend_schema(tags=["Comments"]),
+)
+
 
 class CommentRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Comment.objects.select_related('author', 'post').all()
-    permission_classes = [IsCommentOwner]
+    permission_classes = (IsCommentOwner,)
     lookup_url_kwarg = 'comment_id'
 
     def get_serializer_class(self):
@@ -50,11 +62,3 @@ class CommentRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView)
             return CommentDetailSerializer
         return CommentUpdateSerializer
 
-    def destroy(self, request, *args, **kwargs):
-        instance = self.get_object()
-        self.perform_destroy(instance)
-
-
-        return Response({
-           "message": "Comment muvaffaqiyatli o‘chirildi"
-        }, status=status.HTTP_204_NO_CONTENT)

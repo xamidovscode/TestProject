@@ -1,6 +1,4 @@
 from  django.urls import path
-from rest_framework.views import APIView
-
 from .import views
 
 urlpatterns = [
@@ -14,7 +12,7 @@ urlpatterns = [
     path('resend-reset-code/',views.ResendResetCodeAPIView.as_view(), name='resend_reset_code'),
     path('reset-password/', views.ResetPasswordAPIView.as_view(), name='reset_password'),
 
-
+    path('get-me/', views.GetMeAPIView.as_view(), name='get_me'),
     path('logout/', views.LogoutAPIView.as_view(), name='logout'),
 ]
 

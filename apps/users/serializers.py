@@ -20,20 +20,26 @@ class RegisterSerializer(serializers.Serializer):
         password = attrs['password']
         confirm_password = attrs['confirm_password']
 
-        user = User.objects.filter(email=email, is_verified=True).first()
-
-        if user:
-            raise serializers.ValidationError({
-                'email': "Bunday email allaqachon ro'yhatdan o'tgan!",
-            })
-
-
         if password != confirm_password:
             raise serializers.ValidationError({
                 "password": "Parollar mos emas",
             })
 
         return attrs
+
+class GetMeSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+        fields = (
+            'id',
+            'email',
+            'full_name',
+            'is_verified',
+            'created_at',
+            'updated_at',
+        )
+        read_only_fields = fields
 
 
 class VerifyEmailSerializer(serializers.Serializer):
@@ -83,7 +89,6 @@ class ResetPasswordSerializer(serializers.Serializer):
 
 
 class LogoutSerializer(serializers.Serializer):
-    refresh_token = serializers.CharField()
-
+    refresh = serializers.CharField()
 
 

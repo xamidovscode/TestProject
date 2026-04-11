@@ -1,12 +1,12 @@
 from rest_framework import serializers
 from .models import Post
+from apps.comments.models import Comment
 
 class PostWriteSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Post
         fields = (
-            'id',
             'title',
             'content'
         )
@@ -32,7 +32,9 @@ class CommentListSerializer(serializers.ModelSerializer):
 
 class PostListSerializer(serializers.ModelSerializer):
     author_name = serializers.CharField(source='author.full_name', read_only=True)
-    comments = CommentListSerializer(read_only=True, many=True)
+    comments_count = serializers.IntegerField(read_only=True)
+    like_count = serializers.IntegerField(read_only=True)
+    is_liked = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = Post
@@ -42,7 +44,9 @@ class PostListSerializer(serializers.ModelSerializer):
             "author_name",
             "title",
             "content",
-            "comments",
+            "comments_count",
+            "is_liked",
+            "like_count",
             "created_at",
             "updated_at",
         )
@@ -51,6 +55,9 @@ class PostListSerializer(serializers.ModelSerializer):
 class PostDetailSerializer(serializers.ModelSerializer):
     author_name = serializers.CharField(source='author.full_name', read_only=True)
     comments = CommentListSerializer(read_only=True, many=True)
+    comments_count = serializers.IntegerField(read_only=True)
+    like_count = serializers.IntegerField(read_only=True)
+    is_liked = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = Post
@@ -60,7 +67,10 @@ class PostDetailSerializer(serializers.ModelSerializer):
             "author_name",
             "title",
             "content",
+            "comments_count",
             "comments",
+            "is_liked",
+            "like_count",
             "created_at",
             "updated_at"
         )

@@ -1,13 +1,11 @@
-from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import generics, status
+from django.db.models import Count, Exists, OuterRef, BooleanField, Value
+from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from drf_spectacular.utils import extend_schema_view,extend_schema
 
-from apps.common.permissions import IsOwnerOrReadOnly, IsVerifiedUser
-from rest_framework.filters import SearchFilter, OrderingFilter
-from rest_framework.response import Response
-
+from apps.likes.models import Like
+from utils.permissions import IsOwnerOrReadOnly, IsVerifiedUser
 from utils.filters import PostFilter
-from utils.pagination import PostPagination
 from .models import Post
 
 from .serializers import (
@@ -16,12 +14,35 @@ from .serializers import (
     PostUpdateSerializer,
     PostDetailSerializer)
 
+@extend_schema_view(
+    post=extend_schema("POST")
+)
+
+
 class PostListCreateAPIView(generics.ListCreateAPIView):
-    queryset = Post.objects.select_related('author').order_by('-created_at')
-    filter_backends = (DjangoFilterBackend, SearchFilter, OrderingFilter)
-    search_fields = ('author__full_name','title')
-    pagination_class = PostPagination
     filterset_class = PostFilter
+
+    def get_queryset(self):
+        queryset = Post.objects.select_related('author').annotate(
+            comments_count=Count("comments", distinct=True),
+            like_count=Count("likes", distinct=True),
+        ).order_by('-created_at')
+
+        user = self.request.user
+
+        if user.is_authenticated:
+            queryset = queryset.annotate(
+                is_liked = Exists(
+                    Like.objects.filter(
+                        post=OuterRef('pk'),
+                        user=user
+                    ))
+            )
+        else:
+            queryset = queryset.annotate(
+                is_liked = Value(False, output_field=BooleanField())
+            )
+        return queryset
 
     def get_serializer_class(self):
         if self.request.method == 'GET':
@@ -30,7 +51,7 @@ class PostListCreateAPIView(generics.ListCreateAPIView):
 
     def get_permissions(self):
         if self.request.method == 'GET':
-            return (AllowAny(), )
+            return (AllowAny(),)
         return IsAuthenticated(), IsVerifiedUser()
 
     def perform_create(self, serializer):
@@ -38,16 +59,45 @@ class PostListCreateAPIView(generics.ListCreateAPIView):
 
 
 class PostDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Post.objects.select_related('author')
-    permission_classes = (IsOwnerOrReadOnly,)
+
+    def get_queryset(self):
+        queryset = (Post.objects
+                    .select_related('author')
+                    .prefetch_related('comments')
+                    .annotate(
+            comments_count=Count("comments", distinct=True),
+            like_count=Count("likes", distinct=True),
+        ).order_by('-created_at'))
+
+        user = self.request.user
+
+        if user.is_authenticated:
+            queryset = queryset.annotate(
+                is_liked = Exists(
+                    Like.objects.filter(
+                        post=OuterRef('pk'),
+                        user=user
+                    )
+                )
+            )
+        else:
+            queryset = queryset.annotate(
+                is_liked = Value(False, output_field=BooleanField())
+            )
+
+        return queryset
+
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            return (AllowAny(),)
+        return (IsAuthenticated(), IsOwnerOrReadOnly())
 
     def get_serializer_class(self):
         if self.request.method == 'GET':
             return PostDetailSerializer
         return PostUpdateSerializer
 
-    def get_queryset(self):
-        return self.queryset.filter(author=self.request.user)
+
 
 
 

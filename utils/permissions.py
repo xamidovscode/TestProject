@@ -1,3 +1,5 @@
+from http.cookiejar import request_host
+
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 
 
@@ -27,4 +29,11 @@ class IsCommentOwner(BasePermission):
         if request.method in SAFE_METHODS:
             return True
         return obj.author == request.user
+
+
+class CannotLikeOwnPost(BasePermission):
+    meessage = "Siz o'zingizni postingizga like bosa olmaysiz!"
+
+    def has_object_permission(self, request, view, obj):
+        return obj.author != request.user
 

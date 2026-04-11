@@ -1,10 +1,11 @@
-from time import time
+from rest_framework_simplejwt.exceptions import TokenError
+from rest_framework_simplejwt.tokens import RefreshToken
 
-from rest_framework import generics, status
+from rest_framework import generics, status, request
 from rest_framework.exceptions import ValidationError
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from rest_framework_simplejwt.tokens import RefreshToken
 
 from utils.auth import generate_auth_code, send_verify_code
 from django.core.cache import cache
@@ -15,7 +16,10 @@ from .serializers import (
     LoginSerializer,
     ForgotPasswordSerializer,
     ResendResetCodeSerializer,
-    VerifyResetCodeSerializer, ResetPasswordSerializer, LogoutSerializer
+    VerifyResetCodeSerializer,
+    ResetPasswordSerializer,
+    LogoutSerializer,
+    GetMeSerializer
 )
 from apps.users.models import User
 
@@ -44,17 +48,17 @@ class RegisterAPIView(generics.CreateAPIView):
                 "message": "Sizga allaqachon kod yuborilgan!"
             })
 
-        verified_user = User.objects.filter(email=email, is_verified=True).first()
-        if verified_user:
+        existing_user = User.objects.filter(email=email).order_by('-created_at').first()
+
+        if existing_user and existing_user.is_verified:
             raise ValidationError({
                 "message": "Bu email bilan user allaqachon ro'yhatdan o'tgan!"
             })
 
-        user = User.objects.filter(email=email, is_verified=False).first()
-        if user:
-            user.full_name = validated_data['full_name']
-            user.set_password(password)
-            user.save()
+        if existing_user and not existing_user.is_verified:
+            existing_user.full_name = validated_data['full_name']
+            existing_user.set_password(password)
+            existing_user.save()
         else:
             User.objects.create_user(
                 email=email,
@@ -196,7 +200,12 @@ class VerifyEmailAPIView(generics.GenericAPIView):
         cache.delete(key)
 
 
+class GetMeAPIView(generics.RetrieveAPIView):
+    serializer_class = GetMeSerializer
+    permission_classes = (IsAuthenticated,)
 
+    def get_object(self):
+        return self.request.user
 
 
 class ResendCodeAPIView(generics.GenericAPIView):
@@ -213,7 +222,7 @@ class ResendCodeAPIView(generics.GenericAPIView):
 
         if count >= 5:
             raise ValidationError({
-                "message": "Juda ko'p urinish, keyinroq qaytaday urinib ko'ring"
+                "message": "Juda ko'p urinish, keyinroq qayta urinib ko'ring!"
             })
 
         code_from_cache = self.get_code_from_cache(email)
@@ -604,12 +613,18 @@ class LogoutAPIView(generics.GenericAPIView):
         validated_data = serializer.validated_data
         refresh = validated_data['refresh']
 
-        token = RefreshToken(refresh)
-        token.blacklist()
+        try:
+            token = RefreshToken(refresh)
+            token.blacklist()
+        except TokenError:
+            return Response({
+                "success": False,
+                "message": "Token already blacklisted or invalid"
+            }, status=status.HTTP_400_BAD_REQUEST)
 
         return Response({
             "success": True,
-            "message": "Logout "
+            "message": "Tizimdan muvofaqiyatli chiqildi!"
         },status=status.HTTP_200_OK)
 
 
