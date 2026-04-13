@@ -17,7 +17,7 @@ INTERNAL_IPS = [
     "127.0.0.1"
 ]
 
-REDIS_HOST = config("REDIS_HOST", default="127.0.0.1")
+REDIS_HOST = config("REDIS_HOST", default="redis")
 REDIS_PORT = config("REDIS_PORT", cast=int, default=6379)
 REDIS_DB = config("REDIS_DB", cast=int, default=0)
 
@@ -141,7 +141,7 @@ REST_FRAMEWORK = {
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": os.getenv("REDIS_URL", "redis://localhost:6379/0"),
+        "LOCATION": os.getenv("REDIS_URL", "redis://redis:6379/0"),
     }
 }
 
