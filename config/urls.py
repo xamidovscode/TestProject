@@ -6,9 +6,3 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/v1/', include('apps.api_v1')),
 ]
-
-if settings.DEBUG:
-    urlpatterns += [
-        path("silk/", include("silk.urls", namespace="silk")),
-    ]
-

@@ -1,5 +1,3 @@
-from http.cookiejar import request_host
-
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 
 
