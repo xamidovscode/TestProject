@@ -67,7 +67,7 @@ class RegisterAPIView(generics.CreateAPIView):
                 is_verified=False
             )
         code = generate_auth_code()
-        send_verify_code(email, code)
+        # send_verify_code(email, code)
 
         self.save_code_to_cache(email, code)
         self.increment_sms_count(email)
@@ -245,7 +245,7 @@ class ResendCodeAPIView(generics.GenericAPIView):
             })
 
         code = generate_auth_code()
-        send_verify_code(email, code)
+        # send_verify_code(email, code)
 
         self.save_code_to_cache(email, code)
         self.increment_sms_count(email)
@@ -347,7 +347,7 @@ class ForgotPasswordAPIView(generics.GenericAPIView):
             })
 
         code = generate_auth_code()
-        send_verify_code(email, code)
+        # send_verify_code(email, code)
 
         self.save_code_to_cache(email, code)
         self.increment_sms_count(email)
@@ -516,7 +516,7 @@ class ResendResetCodeAPIView(generics.GenericAPIView):
             })
 
         code = generate_auth_code()
-        send_verify_code(email, code)
+        # send_verify_code(email, code)
 
         self.save_reset_code_to_cache(email, code)
         self.increment_sms_count(email)
