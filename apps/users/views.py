@@ -67,7 +67,13 @@ class RegisterAPIView(generics.CreateAPIView):
                 is_verified=False
             )
         code = generate_auth_code()
-        # send_verify_code(email, code)
+
+        try:
+            send_verify_code(email, code)
+        except Exception:
+            raise ValidationError({
+                "message": "Emailga kod yuborib bo‘lmadi. Keyinroq qayta urinib ko‘ring."
+            })
 
         self.save_code_to_cache(email, code)
         self.increment_sms_count(email)
@@ -245,7 +251,13 @@ class ResendCodeAPIView(generics.GenericAPIView):
             })
 
         code = generate_auth_code()
-        # send_verify_code(email, code)
+
+        try:
+            send_verify_code(email, code)
+        except Exception:
+            raise ValidationError({
+                "message": "Emailga kod yuborib bo‘lmadi. Keyinroq qayta urinib ko‘ring."
+            })
 
         self.save_code_to_cache(email, code)
         self.increment_sms_count(email)
@@ -347,7 +359,13 @@ class ForgotPasswordAPIView(generics.GenericAPIView):
             })
 
         code = generate_auth_code()
-        # send_verify_code(email, code)
+
+        try:
+            send_verify_code(email, code)
+        except Exception:
+            raise ValidationError({
+                "message": "Emailga kod yuborib bo‘lmadi. Keyinroq qayta urinib ko‘ring."
+            })
 
         self.save_code_to_cache(email, code)
         self.increment_sms_count(email)
@@ -516,7 +534,13 @@ class ResendResetCodeAPIView(generics.GenericAPIView):
             })
 
         code = generate_auth_code()
-        # send_verify_code(email, code)
+
+        try:
+            send_verify_code(email, code)
+        except Exception:
+            raise ValidationError({
+                "message": "Emailga kod yuborib bo‘lmadi. Keyinroq qayta urinib ko‘ring."
+            })
 
         self.save_reset_code_to_cache(email, code)
         self.increment_sms_count(email)

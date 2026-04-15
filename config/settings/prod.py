@@ -6,11 +6,12 @@ ALLOWED_HOSTS = [
     "www.mahamatjanov.uz",
 ]
 
-CSRF_TRUSTED_ORIGINS = [
+CORS_ALLOWED_ORIGINS = [
+    "http://192.168.1.147:3001",
+    "http://localhost:3001",
     "https://mahamatjanov.uz",
     "https://www.mahamatjanov.uz",
 ]
-
 # SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 # SECURE_SSL_REDIRECT = True
 #
