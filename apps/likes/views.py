@@ -7,6 +7,8 @@ from drf_spectacular.utils import extend_schema_view,extend_schema
 
 from apps.likes.models import Like
 from apps.posts.models import Post
+from likes.serializers import EmptySerializer
+
 
 @extend_schema_view(
     post=extend_schema(tags=["Like"]),
@@ -15,6 +17,7 @@ from apps.posts.models import Post
 
 class LikeAPIView(GenericAPIView):
     permission_classes = (IsAuthenticated,)
+    serializer_class = EmptySerializer
 
     def get_post(self):
         return get_object_or_404(
