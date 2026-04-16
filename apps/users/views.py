@@ -70,9 +70,10 @@ class RegisterAPIView(generics.CreateAPIView):
 
         try:
             send_verify_code(email, code)
-        except Exception:
+        except Exception as e:
             raise ValidationError({
-                "message": "Emailga kod yuborib bo‘lmadi. Keyinroq qayta urinib ko‘ring."
+                "message": "Emailga kod yuborib bo‘lmadi. Keyinroq qayta urinib ko‘ring.",
+                "error": str(e)
             })
 
         self.save_code_to_cache(email, code)
@@ -254,9 +255,10 @@ class ResendCodeAPIView(generics.GenericAPIView):
 
         try:
             send_verify_code(email, code)
-        except Exception:
+        except Exception as e:
             raise ValidationError({
-                "message": "Emailga kod yuborib bo‘lmadi. Keyinroq qayta urinib ko‘ring."
+                "message": "Emailga kod yuborib bo‘lmadi. Keyinroq qayta urinib ko‘ring.",
+                "error": str(e)
             })
 
         self.save_code_to_cache(email, code)
@@ -362,11 +364,11 @@ class ForgotPasswordAPIView(generics.GenericAPIView):
 
         try:
             send_verify_code(email, code)
-        except Exception:
+        except Exception as e:
             raise ValidationError({
-                "message": "Emailga kod yuborib bo‘lmadi. Keyinroq qayta urinib ko‘ring."
+                "message": "Emailga kod yuborib bo‘lmadi. Keyinroq qayta urinib ko‘ring.",
+                "error": str(e)
             })
-
         self.save_code_to_cache(email, code)
         self.increment_sms_count(email)
 
@@ -537,9 +539,10 @@ class ResendResetCodeAPIView(generics.GenericAPIView):
 
         try:
             send_verify_code(email, code)
-        except Exception:
+        except Exception as e:
             raise ValidationError({
-                "message": "Emailga kod yuborib bo‘lmadi. Keyinroq qayta urinib ko‘ring."
+                "message": "Emailga kod yuborib bo‘lmadi. Keyinroq qayta urinib ko‘ring.",
+                "error": str(e)
             })
 
         self.save_reset_code_to_cache(email, code)

@@ -7,7 +7,6 @@ def generate_auth_code():
     return 777777
 
 
-
 def send_verify_code(email, code):
     send_mail(
         subject="Tasdiqlash kodi",
