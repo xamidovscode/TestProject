@@ -12,7 +12,7 @@ class PostWriteSerializer(serializers.ModelSerializer):
         )
 
 
-class CommentListSerializer(serializers.ModelSerializer):
+class PostCommentListSerializer(serializers.ModelSerializer):
     author_id = serializers.UUIDField(source="author.id", read_only=True)
     post_id = serializers.UUIDField(source="post.id", read_only=True)
     author_name = serializers.CharField(source="author.full_name", read_only=True)
