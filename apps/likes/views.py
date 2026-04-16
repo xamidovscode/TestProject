@@ -7,7 +7,7 @@ from drf_spectacular.utils import extend_schema_view,extend_schema
 
 from apps.likes.models import Like
 from apps.posts.models import Post
-from likes.serializers import EmptySerializer
+from apps.likes.serializers import EmptySerializer
 
 
 @extend_schema_view(
