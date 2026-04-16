@@ -54,7 +54,7 @@ class PostListSerializer(serializers.ModelSerializer):
 
 class PostDetailSerializer(serializers.ModelSerializer):
     author_name = serializers.CharField(source='author.full_name', read_only=True)
-    comments = CommentListSerializer(read_only=True, many=True)
+    comments = PostCommentListSerializer(read_only=True, many=True)
     comments_count = serializers.IntegerField(read_only=True)
     like_count = serializers.IntegerField(read_only=True)
     is_liked = serializers.BooleanField(read_only=True)
