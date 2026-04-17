@@ -20,12 +20,15 @@ from .serializers import (
 
 
 class CommentListCreateAPIView(generics.ListCreateAPIView):
+    queryset = Comment.objects.none()
 
     def get_queryset(self):
-        queryset = Comment.objects.select_related('author', 'post').filter(
-            post=self.kwargs['pk']
-        ).order_by('-created_at')
-        return queryset
+        if getattr(self, "swagger_fake_view", False):
+            return Comment.objects.none()
+
+        return Comment.objects.select_related("author", "post").filter(
+            post=self.kwargs["pk"]
+        ).order_by("-created_at")
 
     def get_permissions(self):
         if self.request.method == 'GET':
