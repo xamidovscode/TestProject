@@ -29,7 +29,7 @@ class LikeAPIView(GenericAPIView):
 
         if post.author == request.user:
             return Response(
-                {"detail": "O'zingizning postingizga like bosa olmaysiz."},
+                {"message": "O'zingizning postingizga like bosa olmaysiz."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -41,7 +41,7 @@ class LikeAPIView(GenericAPIView):
         if not created:
             return Response(
                 {
-                    "detail": "Siz bu postga allaqachon like bosgansiz.",
+                    "message": "Siz bu postga allaqachon like bosgansiz.",
                     "liked": True,
                     "like_count": post.likes.count()
                 },
@@ -50,7 +50,7 @@ class LikeAPIView(GenericAPIView):
 
         return Response(
             {
-                "detail": "Like muvaffaqiyatli qo'yildi.",
+                "message": "Like muvaffaqiyatli qo'yildi.",
                 "liked": True,
                 "like_count": post.likes.count()
             },
@@ -68,7 +68,7 @@ class LikeAPIView(GenericAPIView):
         if not like:
             return Response(
                 {
-                    "detail": "Like topilmadi.",
+                    "message": "Like topilmadi.",
                     "liked": False,
                     "like_count": post.likes.count()
                 },
@@ -79,7 +79,7 @@ class LikeAPIView(GenericAPIView):
 
         return Response(
             {
-                "detail": "Like olib tashlandi.",
+                "message": "Like olib tashlandi.",
                 "liked": False,
                 "like_count": post.likes.count()
             },
