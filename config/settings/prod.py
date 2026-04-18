@@ -1,7 +1,7 @@
 from .base import *
 DEBUG = False
 
-ALLOWED_HOSTS = ["mahamatjanov.uz,www.mahamatjanov.uz"]
+ALLOWED_HOSTS = ["mahamatjanov.uz","www.mahamatjanov.uz"]
 
 CORS_ALLOWED_ORIGINS = [
     "https://mahamatjanov.uz",
