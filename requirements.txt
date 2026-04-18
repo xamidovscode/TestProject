@@ -6,6 +6,7 @@ psycopg[binary]
 gunicorn
 django-silk==5.4.3
 pillow==12.1.1
+requests
 
 
 django-cors-headers

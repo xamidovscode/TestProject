@@ -1,11 +1,9 @@
 from .base import *
 DEBUG = False
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = ["ttps://mahamatjanov.uz,https://www.mahamatjanov.uz"]
 
 CORS_ALLOWED_ORIGINS = [
-    "http://192.168.1.147:3001",
-    "http://localhost:3001",
     "https://mahamatjanov.uz",
     "https://www.mahamatjanov.uz",
 ]

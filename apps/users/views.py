@@ -7,7 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 
-from utils.auth import generate_auth_code, send_verify_code
+from utils.auth import BrevoEmailError, send_verify_code,generate_auth_code
 from django.core.cache import cache
 from .serializers import (
     RegisterSerializer,
@@ -70,11 +70,16 @@ class RegisterAPIView(generics.CreateAPIView):
 
         try:
             send_verify_code(email, code)
-        except Exception as e:
-            raise ValidationError({
-                "message": "Emailga kod yuborib bo‘lmadi. Keyinroq qayta urinib ko‘ring.",
-                "error": str(e)
-            })
+        except BrevoEmailError as e:
+            return Response(
+                {"success": False, "message": str(e)},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        except Exception:
+            return Response(
+                {"success": False, "message": "Kod emailga yuborilmadi."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
 
         self.save_code_to_cache(email, code)
         self.increment_sms_count(email)
@@ -255,11 +260,16 @@ class ResendCodeAPIView(generics.GenericAPIView):
 
         try:
             send_verify_code(email, code)
-        except Exception as e:
-            raise ValidationError({
-                "message": "Emailga kod yuborib bo‘lmadi. Keyinroq qayta urinib ko‘ring.",
-                "error": str(e)
-            })
+        except BrevoEmailError as e:
+            return Response(
+                {"success": False, "message": str(e)},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        except Exception:
+            return Response(
+                {"success": False, "message": "Kod emailga yuborilmadi."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
 
         self.save_code_to_cache(email, code)
         self.increment_sms_count(email)
@@ -364,11 +374,16 @@ class ForgotPasswordAPIView(generics.GenericAPIView):
 
         try:
             send_verify_code(email, code)
-        except Exception as e:
-            raise ValidationError({
-                "message": "Emailga kod yuborib bo‘lmadi. Keyinroq qayta urinib ko‘ring.",
-                "error": str(e)
-            })
+        except BrevoEmailError as e:
+            return Response(
+                {"success": False, "message": str(e)},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        except Exception:
+            return Response(
+                {"success": False, "message": "Kod emailga yuborilmadi."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
         self.save_code_to_cache(email, code)
         self.increment_sms_count(email)
 
@@ -539,11 +554,16 @@ class ResendResetCodeAPIView(generics.GenericAPIView):
 
         try:
             send_verify_code(email, code)
-        except Exception as e:
-            raise ValidationError({
-                "message": "Emailga kod yuborib bo‘lmadi. Keyinroq qayta urinib ko‘ring.",
-                "error": str(e)
-            })
+        except BrevoEmailError as e:
+            return Response(
+                {"success": False, "message": str(e)},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        except Exception:
+            return Response(
+                {"success": False, "message": "Kod emailga yuborilmadi."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
 
         self.save_reset_code_to_cache(email, code)
         self.increment_sms_count(email)
