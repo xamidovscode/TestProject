@@ -4,10 +4,10 @@ from django.urls import path, include
 from drf_spectacular.views import SpectacularSwaggerView, SpectacularAPIView
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path('admin-qw/', admin.site.urls),
     path('api/v1/', include('apps.api_v1')),
-    path("schema/", SpectacularAPIView.as_view(), name="api-schema"),
-    path("docs/", SpectacularSwaggerView.as_view(url_name="api-schema")),
+    path("schema-qw/", SpectacularAPIView.as_view(), name="api-schema"),
+    path("docs-qw/", SpectacularSwaggerView.as_view(url_name="api-schema")),
 ]
 
 if settings.DEBUG:
