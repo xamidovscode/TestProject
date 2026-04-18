@@ -332,7 +332,7 @@ class LoginAPIView(generics.GenericAPIView):
 
         if not user.check_password(password):
             raise ValidationError({
-                "message": "Email yoki parol xato!"
+                "message": "Parol xato kiritildi!"
             })
 
         return  Response(user.get_tokens(), status=status.HTTP_200_OK)
