@@ -1,7 +1,7 @@
 from .base import *
 DEBUG = False
 
-ALLOWED_HOSTS = ["ttps://mahamatjanov.uz,https://www.mahamatjanov.uz"]
+ALLOWED_HOSTS = ["mahamatjanov.uz,www.mahamatjanov.uz"]
 
 CORS_ALLOWED_ORIGINS = [
     "https://mahamatjanov.uz",
@@ -12,7 +12,6 @@ EMAIL_TIMEOUT = 5
 
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 SECURE_SSL_REDIRECT = True
-
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 
